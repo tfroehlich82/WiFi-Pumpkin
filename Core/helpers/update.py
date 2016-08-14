@@ -150,7 +150,24 @@ class ProgressBarWid(QProgressBar):
         super(ProgressBarWid, self).__init__()
         self.setMinimum(1)
         self.setMaximum(total)
+        font=QFont('White Rabbit')
+        font.setPointSize(5)
+        self.setFont(font)
         self._active = False
+        self.setAlignment(Qt.AlignCenter)
+        self._text = None
+
+    def setText(self, text):
+        self._text = text
+
+    def text(self):
+        if self._text != None:
+            return QString(str(self._text))
+        return QString('')
+
+    def update_bar_simple(self, add):
+        value = self.value() + add
+        self.setValue(value)
 
     def update_bar(self, add):
         while True:

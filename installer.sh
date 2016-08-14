@@ -16,7 +16,7 @@ func_Banner(){
 	echo '   ============================='
 	echo "   |$bldblu wifi-pumpkin Installer$txtrst|"
 	echo '   ============================='
-	echo "          Version: $(tput setaf 5)0.7.3 $txtrst"
+	echo "          Version: $(tput setaf 5)0.7.8 $txtrst"
 	echo "usage: ./installer.sh --install | --uninstall"
 }
 
@@ -48,7 +48,10 @@ func_install(){
 		exit 1
 	fi
 	apt-get update
-	apt-get install -y python-qt4 python-scapy php5-cli hostapd rfkill
+	apt-get install -y build-essential libnetfilter-queue-dev
+	apt-get install -y python-qt4 python-scapy hostapd rfkill
+	apt-get install -y python-dev
+	apt-get install -y libpcap-dev
     pip install -r requirements.txt
     File="/etc/apt/sources.list"
     if  grep -q '#Wifi Pumpkin' $File;then
@@ -59,7 +62,6 @@ func_install(){
 	echo "[=]$bldblu checking dependencies $txtrst "
 	func_check_install "hostapd"
 	func_check_install "dhcpd"
-	func_check_install "php"
 	echo "----------------------------------------"
 	dist=$(tr -s ' \011' '\012' < /etc/issue | head -n 1)
 	check_arch=$(uname -m)
@@ -108,16 +110,16 @@ func_install(){
 		cp -r $path_install /usr/share/WiFi-Pumpkin/
 		bin_install
 		echo "[$green✔$txtrst] wifi-pumpkin installed with success"
-		echo "[$green✔$txtrst] execute $bldred wifipumpkin$txtrst in terminal"
+		echo "[$green✔$txtrst] execute $bldred sudo wifi-pumpkin$txtrst in terminal"
 	else
 		rm -r $DIRECTORY
 		mkdir $DIRECTORY
 		cp -r $path_install /usr/share/WiFi-Pumpkin/
 		bin_install
 		echo "[$green✔$txtrst] wifi-pumpkin installed with success"
-		echo "[$green✔$txtrst] execute $bldred wifi-pumpkin$txtrst in terminal"
+		echo "[$green✔$txtrst] execute $bldred sudo wifi-pumpkin$txtrst in terminal"
 	fi
-	echo "[$green+$txtrst]$color_y P0cL4bs Team CopyRight 2015$txtrst"
+	echo "[$green+$txtrst]$color_y P0cL4bs Team CopyRight 2015-2016$txtrst"
 	echo "[$green+$txtrst] Enjoy"
 	exit 0
 }
@@ -126,7 +128,7 @@ bin_install(){
 	if [ ! -f "/usr/bin/wifi-pumpkin" ]; then
 	    echo "[$green✔$txtrst] PATH::$DIRECTORY"
 		echo "[$green✔$txtrst] binary::/usr/bin/"
-		echo "'/usr/share/WiFi-Pumpkin/wifi-pumpkin.py'" >> /usr/bin/wifi-pumpkin
+        ln -sfT /usr/share/WiFi-Pumpkin/wifi-pumpkin.py /usr/bin/wifi-pumpkin
 		chmod +x /usr/bin/wifi-pumpkin
 	fi
 }

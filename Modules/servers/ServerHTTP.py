@@ -7,6 +7,7 @@ import SocketServer
 import threading
 import urllib2
 import logging
+import socket
 import cgi
 
 
@@ -47,18 +48,65 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             self.redirect(self.redirect_Original_website)
         SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
 
+class ServerPhishing(SimpleHTTPServer.SimpleHTTPRequestHandler):
+    ''' server http for website clone module Phishing'''
+    redirect_Path = None,None
+    def do_GET(self):
+        self.log_message('',"Connected : %s" %(self.address_string()))
+        if self.path =='/':self.path = self.redirect_Path
+        if self.path.startswith('/'): self.path = self.redirect_Path + self.path
+        SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
+
+    def log_message(self, format, *args): return
+
+class MyHTTPServer(BaseHTTPServer.HTTPServer):
+    ''' by: Piotr Dobrogost callback for start and stop event '''
+    def __init__(self, *args, **kwargs):
+        self.on_before_serve = kwargs.pop('on_before_serve', None)
+        BaseHTTPServer.HTTPServer.__init__(self, *args, **kwargs)
+
+    def serve_forever(self, poll_interval=0.5):
+        if self.on_before_serve:
+            self.on_before_serve(self)
+        BaseHTTPServer.HTTPServer.serve_forever(self, poll_interval)
+
+class ThreadHTTPServerPhishing(QThread):
+    ''' server http for website  module::UpdateFake'''
+    request = pyqtSignal(object)
+    def __init__(self,PORT,DIRECTORY,parent=None):
+        super(ThreadHTTPServerPhishing, self).__init__(parent)
+        self.PORT,self.DIRECTORY = PORT,DIRECTORY
+
+    def run(self):
+        self.httpd = None
+        self.Handler = ServerPhishing
+        self.Handler.redirect_Path = self.DIRECTORY
+        self.Handler.log_message = self.Method_GET_REQUEST
+        self.httpd = MyHTTPServer(('', self.PORT), self.Handler,
+        on_before_serve = self.httpd)
+        self.httpd.allow_reuse_address = True
+        self.httpd.serve_forever()
+
+    def Method_GET_REQUEST(self,format, *args ):
+        self.request.emit('{}'.format(list(args)[0]))
+
+    def stop(self):
+        self.httpd.shutdown()
+        self.httpd.server_close()
+
 class ServerThreadHTTP(QThread):
+    ''' server http for website custom module Phishing '''
     requestHTTP = pyqtSignal(object)
     def __init__(self,Address,PORT,redirect=None,directory=None):
         self.Address,self.PORT = Address,PORT
         self.Handler = ServerHandler
         self.Handler.redirect_Original_website = redirect
         self.Handler.redirect_Path = directory
-        self.httpd = BaseHTTPServer.HTTPServer((self.Address, self.PORT), self.Handler)
         QThread.__init__(self)
 
     def run(self):
-        print "Serving at: http://%(interface)s:%(port)s\n" % dict(interface=self.Address, port=self.PORT)
+        self.httpd = None
+        self.httpd = MyHTTPServer((self.Address, self.PORT), self.Handler,on_before_serve = self.httpd)
         self.Handler.log_message = self.Method_GET_LOG
         setup_logger('phishing', './Logs/Phishing/Webclone.log')
         self.log_phishing = logging.getLogger('phishing')

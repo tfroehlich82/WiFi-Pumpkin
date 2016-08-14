@@ -2,6 +2,7 @@ import threading
 from os import chdir,getcwd, devnull
 from multiprocessing import Process,Manager
 from Modules.spreads.UpdateFake import frm_update_attack
+from Core.packets.network import ThARP_posion,ThSpoofAttack
 from Core.loaders.Stealth.PackagesUI import *
 threadloading = {'template':[],'posion':[]}
 
@@ -50,7 +51,7 @@ class frm_Arp_Poison(PumpkinModule):
                     for i in self.ThreadDirc['Arp_posion']:
                         i.stop(),i.join()
                 except:pass
-                if self.configure.xmlSettings('statusAP','value',None,False) == 'False':
+                if not self.configure.Settings.get_setting('accesspoint','statusAP'):
                     Refactor.set_ip_forward(0)
             self.deleteLater()
             return
@@ -74,19 +75,22 @@ class frm_Arp_Poison(PumpkinModule):
         self.tables = QTableWidget(5,3)
         self.tables.setRowCount(100)
         self.tables.setFixedHeight(200)
+        self.tables.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.tables.horizontalHeader().setStretchLastSection(True)
         self.tables.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tables.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tables.clicked.connect(self.list_clicked_scan)
         self.tables.resizeColumnsToContents()
         self.tables.resizeRowsToContents()
         self.tables.horizontalHeader().resizeSection(1,120)
-        self.tables.horizontalHeader().resizeSection(0,145)
-        self.tables.horizontalHeader().resizeSection(2,158)
+        self.tables.horizontalHeader().resizeSection(0,135)
+        self.tables.horizontalHeader().resizeSection(2,150)
         self.tables.verticalHeader().setVisible(False)
         Headers = []
         for key in reversed(self.data.keys()):
             Headers.append(key)
         self.tables.setHorizontalHeaderLabels(Headers)
+        self.tables.verticalHeader().setDefaultSectionSize(23)
 
         self.txt_target = QLineEdit(self)
         self.txt_gateway = QLineEdit(self)
@@ -173,7 +177,7 @@ class frm_Arp_Poison(PumpkinModule):
         self.StatusMonitor(False,'stas_scan')
         self.StatusMonitor(False,'stas_arp')
         self.StatusMonitor(False,'stas_phishing')
-        scan_range = self.configure.xmlSettings('scan','rangeIP',None,False)
+        scan_range = self.configure.Settings.get_setting('settings','scanner_rangeIP')
         self.ip_range.setText(scan_range)
         if x['gateway'] != None:
             self.txt_gateway.setText(x['gateway'])
@@ -184,6 +188,9 @@ class frm_Arp_Poison(PumpkinModule):
         for i,j in enumerate(n):
             if n[i] != '':
                 self.ComboIface.addItem(n[i])
+        if self.configure.Settings.get_setting('accesspoint','statusAP',format=bool):
+            self.ComboIface.setCurrentIndex(x['all'].index(self.configure.Settings.get_setting('accesspoint',
+            'interfaceAP')))
 
     def thread_scan_reveice(self,info_ip):
         self.StatusMonitor(False,'stas_scan')
@@ -205,14 +212,13 @@ class frm_Arp_Poison(PumpkinModule):
             Headers.append(key)
         self.tables.setHorizontalHeaderLabels(Headers)
 
-    def discoveryIface(self):
-        iface = str(self.ComboIface.currentText())
-        mac = Refactor.getHwAddr(iface)
-        ip = Refactor.get_Ipaddr(iface)
-        if self.configure.xmlSettings('statusAP','value',None,False) == 'True':
-            self.txt_gateway.setText('10.0.0.1')
-        self.txt_mac.setText(mac)
-        self.txt_redirect.setText(ip)
+    @pyqtSlot(QModelIndex)
+    def discoveryIface(self,iface):
+        if self.configure.Settings.get_setting('accesspoint','interfaceAP') == str(iface):
+            if self.configure.Settings.get_setting('accesspoint','statusAP',format=bool):
+                self.txt_gateway.setText(self.configure.Settings.get_setting('dhcp','router'))
+        self.txt_mac.setText(Refactor.getHwAddr(str(iface)))
+        self.txt_redirect.setText(Refactor.get_Ipaddr(str(iface)))
 
     def show_frm_fake(self):
         self.n = frm_update_attack()
@@ -262,26 +268,23 @@ class frm_Arp_Poison(PumpkinModule):
             if (len(self.txt_target.text()) and len(self.txt_gateway.text())) and len(self.txt_mac.text()) != 0:
                 if len(self.txt_redirect.text()) != 0:
                     self.StatusMonitor(True,'stas_arp')
-                    if self.configure.xmlSettings('statusAP','value',None,False) == 'False':
-                        Refactor.set_ip_forward(1)
-                        arp_gateway = ThARP_posion(str(self.txt_gateway.text()),str(self.txt_target.text()),
-                        get_if_hwaddr(str(self.ComboIface.currentText())))
-                        arp_gateway.setObjectName('Arp Posion:: [gateway]')
-                        self.ThreadDirc['Arp_posion'].append(arp_gateway)
-                        arp_gateway.start()
+                    Refactor.set_ip_forward(1)
+                    arp_gateway = ThARP_posion(str(self.txt_gateway.text()),str(self.txt_target.text()),
+                    get_if_hwaddr(str(self.ComboIface.currentText())))
+                    arp_gateway.setObjectName('Arp Poison:: [gateway]')
+                    self.ThreadDirc['Arp_posion'].append(arp_gateway)
+                    arp_gateway.start()
 
-                        arp_target = ThARP_posion(str(self.txt_target.text()),str(self.txt_gateway.text()),
-                        str(self.txt_mac.text()))
-                        self.connect(arp_target,SIGNAL('Activated ( QString ) '), self.StopArpAttack)
-                        arp_target.setObjectName('Arp::Posion => [target]')
-                        self.ThreadDirc['Arp_posion'].append(arp_target)
-                        arp_target.start()
+                    arp_target = ThARP_posion(str(self.txt_target.text()),str(self.txt_gateway.text()),
+                    str(self.txt_mac.text()))
+                    self.connect(arp_target,SIGNAL('Activated ( QString ) '), self.StopArpAttack)
+                    arp_target.setObjectName('Arp::Poison => [target]')
+                    self.ThreadDirc['Arp_posion'].append(arp_target)
+                    arp_target.start()
 
                     redirectPackets = ThSpoofAttack('',
                     str(self.ComboIface.currentText()),'udp port 53',True,str(self.txt_redirect.text()))
                     self.connect(redirectPackets,SIGNAL('Activated ( QString ) '), self.StopArpAttack)
-                    if self.configure.xmlSettings('statusAP','value',None,False) == 'False':redirectPackets.redirection()
-                    else:redirectPackets.redirectionAP()
                     redirectPackets.setObjectName('Packets Spoof')
                     self.ThreadDirc['Arp_posion'].append(redirectPackets)
                     redirectPackets.start()
@@ -290,7 +293,7 @@ class frm_Arp_Poison(PumpkinModule):
 
     def Start_scan(self):
         self.StatusMonitor(True,'stas_scan')
-        threadscan_check = self.configure.xmlSettings('advanced','Function_scan',None,False)
+        threadscan_check = self.configure.Settings.get_setting('settings','Function_scan')
         self.tables.clear()
         self.data = {'IPaddress':[], 'Hostname':[], 'MacAddress':[]}
         if threadscan_check == 'Nmap':
@@ -302,13 +305,8 @@ class frm_Arp_Poison(PumpkinModule):
             if  self.txt_gateway.text() != '':
                 self.movie_screen.setDisabled(True)
                 self.tables.setVisible(False)
-                config_gateway = str(self.txt_gateway.text())
-                scan = ''
-                config_gateway = config_gateway.split('.')
-                del config_gateway[-1]
-                for i in config_gateway:
-                    scan += str(i) + '.'
-                self.ThreadScanner = ThreadScan(scan + '0/24')
+                gateway = str(self.txt_gateway.text())
+                self.ThreadScanner = ThreadScan(gateway[:len(gateway)-len(gateway.split('.').pop())] + '0/24')
                 self.connect(self.ThreadScanner,SIGNAL('Activated ( QString ) '), self.thread_scan_reveice)
                 self.StatusMonitor(True,'stas_scan')
                 self.ThreadScanner.start()
@@ -317,46 +315,25 @@ class frm_Arp_Poison(PumpkinModule):
 
         elif threadscan_check == 'Ping':
             if self.txt_gateway.text() != '':
-                config = str(self.txt_gateway.text())
-                t = threading.Thread(target=self.scanner_network,args=(config,))
-                t.daemon = True
-                t.start(),t.join()
-                self.StatusMonitor(False,'stas_scan')
+                self.thread_ScanIP = ThreadFastScanIP(str(self.txt_gateway.text()),self.ip_range.text())
+                self.thread_ScanIP.sendDictResultscan.connect(self.get_result_scanner_ip)
+                self.StatusMonitor(True,'stas_scan')
+                self.thread_ScanIP.start()
+                Headers = []
+                for key in reversed(self.data.keys()):
+                    Headers.append(key)
+                self.tables.setHorizontalHeaderLabels(Headers)
             else:
                 QMessageBox.information(self,'Error in gateway','gateway not found.')
         else:
             QMessageBox.information(self,'Error on select thread Scan','thread scan not selected.')
 
-    def working(self,ip,lista):
-        with open(devnull, 'wb') as limbo:
-            result=Popen(['ping', '-c', '1', '-n', '-W', '1', ip],
-            stdout=limbo, stderr=limbo).wait()
-            if not result:
-                print('online',ip)
-                lista[ip] = ip + '|' + self.module_network.get_mac(ip)
-
-    def scanner_network(self,gateway):
-        scan = ''
-        config_gateway = gateway.split('.')
-        del config_gateway[-1]
-        for i in config_gateway:
-            scan += str(i) + '.'
-        gateway = scan
-        ranger = str(self.ip_range.text()).split('-')
-        jobs = []
-        manager = Manager()
-        on_ips = manager.dict()
-        for n in xrange(int(ranger[0]),int(ranger[1])):
-            ip='%s{0}'.format(n)%(gateway)
-            p = Process(target=self.working,args=(ip,on_ips))
-            jobs.append(p)
-            p.start()
-        for i in jobs: i.join()
-        for i in on_ips.values():
-            Headers = []
-            n = i.split('|')
-            self.data['IPaddress'].append(n[0])
-            self.data['MacAddress'].append(n[1])
+    def get_result_scanner_ip(self,data):
+        Headers = []
+        for items in data.values():
+            dataIP = items.split('|')
+            self.data['IPaddress'].append(dataIP[0])
+            self.data['MacAddress'].append(dataIP[1])
             self.data['Hostname'].append('<unknown>')
             for n, key in enumerate(reversed(self.data.keys())):
                 Headers.append(key)
@@ -368,9 +345,12 @@ class frm_Arp_Poison(PumpkinModule):
         for key in reversed(self.data.keys()):
             Headers.append(key)
         self.tables.setHorizontalHeaderLabels(Headers)
+        self.StatusMonitor(False,'stas_scan')
+        self.Stop_scan()
+        self.thread_ScanIP.manager.shutdown()
 
     def Stop_scan(self):
-        self.ThreadScanner.terminate()
+        self.thread_ScanIP.stop()
         self.StatusMonitor(False,'stas_scan')
         Headers = []
         for key in reversed(self.data.keys()):

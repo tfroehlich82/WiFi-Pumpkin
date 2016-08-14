@@ -1,3 +1,47 @@
+Version 0.7.8
+-------------
+- moved progressBar to statusBar
+- fixed thread scanner IP in Modules::DNS,ARP spoof
+- changed plugins options to sslstrip+/dns2proxy, sslstrip/sergio-proxy
+- added option run AP without Proxy
+- added donate options
+- added ThreadHTTPServerPhishing in Module::UpdateFake
+- fixed PhishingManager::ServerThreadHTTP errno 98 address already in use
+- fixed duplicate logging::setup_logger when run more than once
+- fixed Thread::sslstrip added Reactor.run() to Threads
+- fixed error when running ettercap and driftnet in menu::tools #67
+- fixed directory module in ThreadHTTPServerPhishing
+- fixed domain-name-servers in dhcpd server
+- fixed re-design Modules DNS spoof, Update Fake Attack
+- added new module DNS spoof with NetfilterQueue
+- added support Parrot 3.0.1 to use AP with wireless connection #69
+
+Version 0.7.5
+-------------
+- fixed size QTableWidget on modules
+- fixed scanner fast ipaddress devices
+- added new QSettings Core/modules::Configure
+- added mac address interface to exclude NetworkManager
+- added dockArea Monitor -> Pumpkin-Settings
+- added progressBar for starting Thread
+- removed privillege.py: execute root app
+- added support to start AP with wireless connection
+    * Kali Linux (Apparently not work, need some tests) :(
+    * support kubuntu 15.10
+    * support wifislax - 4.11.1
+    * support parrot - 2.0.5
+- fixed performance start GUI::Core
+- fixed Qwidgets which already has a layout, add Exception get_network_scan() #36
+- fixed error when executed from symlink file #50
+- fixed error: too many open files, added ulimit
+- added Tab Pump-Settings -> [Class Ranges] options
+- fixed Pump-Settings->Advanced Mode:: allow run after started AP
+- some improvements on module DnsSpoof,ArpPoison and Core::main closeEvent
+- fixed error on "Settings" option #58
+- added Qprocess into Threads::Process,fixed run plugin::dns2proxy
+- fixed error Advanced Mode::monitor crashed application #60
+- added QScrollArea on Settings::General, About::ThanksTo
+
 Version 0.7.3
 -------------
 - added new Pump-Logo default
@@ -10,6 +54,7 @@ Version 0.7.3
 - fixed logger duplicate injection::proxy
 - fixed get_interfaces method (netifaces module)
 - added new Tab Pump-Monitor Clients::RequestsAP
+- changed organizational structure::Core, fixed bug when logging in PumpkinProxy::url
 
 Version 0.7.1
 -------------

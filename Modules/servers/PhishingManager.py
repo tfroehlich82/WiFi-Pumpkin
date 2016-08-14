@@ -1,11 +1,12 @@
-from PyQt4.QtGui import *
 from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 from os import popen,chdir,getcwd
 from urllib2 import urlopen,URLError
 from BeautifulSoup import BeautifulSoup
-from Core.config.Settings import frm_Settings
-from Core.Utils import Beef_Hook_url,ThreadPhishingServer
-from Modules.servers.ServerHTTP  import ServerThreadHTTP,ServerHandler
+from Core.Utils import ThreadPhishingServer
+from Core.utility.extract import Beef_Hook_url
+from Core.utility.settings import frm_Settings
+from Modules.servers.ServerHTTP  import ServerThreadHTTP
 """
 Description:
     This program is a module for wifi-pumpkin.py file which includes functionality
@@ -60,22 +61,22 @@ class frm_PhishingManager(QWidget):
             self.statusLabel.setStyleSheet("QLabel {  color : red; }")
 
     def UI(self):
-        self.statusBar   = QStatusBar(self)
+        self.statusBar   = QStatusBar()
         self.statusLabel = QLabel('')
         self.statusBar.addWidget(QLabel('Status HTTP Server::'))
         self.StatusServer(False)
         self.statusBar.addWidget(self.statusLabel)
         # left page
-        self.frmHtml     = QFormLayout(self)
-        self.frmOutput   = QFormLayout(self)
+        self.frmHtml     = QFormLayout()
+        self.frmOutput   = QFormLayout()
 
         # right page
-        self.frmSettings = QFormLayout(self)
-        self.frmCheckBox = QFormLayout(self)
-        self.frmClone    = QFormLayout(self)
-        self.frmButtons  = QFormLayout(self)
-        self.frmright    = QFormLayout(self)
-        self.frmleft     = QFormLayout(self)
+        self.frmSettings = QFormLayout()
+        self.frmCheckBox = QFormLayout()
+        self.frmClone    = QFormLayout()
+        self.frmButtons  = QFormLayout()
+        self.frmright    = QFormLayout()
+        self.frmleft     = QFormLayout()
 
         #group checkbox
         self.check_custom   = QRadioButton('index.html  ')
@@ -178,7 +179,7 @@ class frm_PhishingManager(QWidget):
         self.frmleft.addRow(self.Group_Html)
         self.frmleft.addRow(self.Group_List)
 
-        layout = QHBoxLayout(self)
+        layout = QHBoxLayout()
         layout.addLayout(self.frmleft)
         layout.addLayout(self.frmright)
 
@@ -208,6 +209,10 @@ class frm_PhishingManager(QWidget):
     def start_server(self):
         if len(str(self.txt_redirect.text())) == 0:
             return QMessageBox.warning(self,'localhost','Ip Address not found.')
+        if self.check_server.isChecked():
+            if len(popen('which php').read().split('\n')[0]) == 0:
+                return QMessageBox.warning(self,'Requirement Software',
+                'php-5 is not installed \n\ntry: install sudo apt-get install php5')
         if self.check_clone.isChecked():
             if len(self.cloneLineEdit.text()) == 0:
                 return QMessageBox.warning(self,'Clone','input clone empty')
